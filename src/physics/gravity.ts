@@ -1,4 +1,4 @@
-import { Fn, If, instanceIndex, max, min, normalize, ShaderNodeObject, uint, vec3 } from "three/tsl";
+import { dot, Fn, If, instanceIndex, max, min, normalize, reflect, ShaderNodeObject, uint, vec3 } from "three/tsl";
 import { StorageBufferNode } from "three/webgpu";
 import { Uniforms } from "../types";
 import { ShaderNodeFn } from "three/src/nodes/TSL.js";
@@ -19,13 +19,11 @@ export function computeGravity(
         // Collision with planet
         const centerDist = dv.length();
         If(centerDist.lessThan(planetSize.div(2)), () => {
-            const curSpeed = velocity.length();
-            // TODO: reflect
-            velocity.assign(velocity.negate().mul(10));
-            position.assign(center.add(dv));
-
-            // const normalDist = dv.normalize();
-            // speed.assign(normalDist.mul(-1).mul(speed.length()).mul(bounce));
+            const normal = dv.normalize();
+            // Reflect velocity about surface normal and apply bounce dampening
+            velocity.assign(reflect(velocity, normal).mul(bounce));
+            // Push position to planet surface
+            position.assign(center.add(normal.mul(planetSize.div(2))));
         });
 
         const normalizedDist = normalize(dv);
